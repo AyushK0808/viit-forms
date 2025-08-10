@@ -78,28 +78,16 @@ const FutureForm: React.FC<FutureFormProps> = ({ formData, errors, onChange }) =
         placeholder="Explain your level of commitment with examples"
         error={errors.commitmentJustification}
       />
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Do you want to lead the club from a board position/senior core? Choose which would you prefer.
-        </label>
-        <select
+      <InputField
+          id="leadershipPreference"
+          label="Do you want to lead the club from a board position/senior core? Choose which would you prefer."
+          type="select"
           value={formData.leadershipPreference}
-          onChange={(e) => onChange('leadershipPreference', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          onChange={(value) => onChange('leadershipPreference', value)}
           required
-        >
-          <option value="">Select preference</option>
-          {leadershipOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {errors.leadershipPreference && (
-          <p className="mt-1 text-sm text-red-600">{errors.leadershipPreference}</p>
-        )}
-      </div>
+          options={['Board', 'Senior Core', 'Either Board or Senior Core', 'None']}
+          error={errors.leadershipPreference }
+        />
 
       <InputField
         id="immediateChanges"
