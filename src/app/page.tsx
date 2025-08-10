@@ -127,7 +127,7 @@ const FormNavigation: React.FC<FormNavigationProps> = ({
         Previous
       </button>
 
-      <div className="text-sm text-purple-300 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-purple-500/20">
+      <div className="text-sm text-purple-300 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-purple-500/20 invisible md:visible">
         Page {currentPage} of {totalPages}
       </div>
 
@@ -159,8 +159,8 @@ const FormNavigation: React.FC<FormNavigationProps> = ({
           onClick={onNext}
           className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg font-medium transition-all duration-200 backdrop-blur-sm border border-purple-500/30 hover:border-purple-400 shadow-lg shadow-purple-900/50 relative overflow-hidden group"
         >
-          Next
-          <ChevronRight className="w-5 h-5 ml-1" />
+          <div className='z-10'>Next</div>
+          <ChevronRight className="w-5 h-5 ml-1 z-10" />
           <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-400 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
         </button>
       )}
@@ -629,7 +629,7 @@ export default function VinnovateITForm() {
               <div className="flex items-center justify-center mb-8">
                 <div className="flex items-center bg-black/30 backdrop-blur-sm px-6 py-3 rounded-full border border-purple-500/30">
                   <CurrentIcon className="w-8 h-8 text-purple-400 mr-3" />
-                  <h2 className="text-2xl font-semibold text-purple-300">{PAGE_TITLES[currentPage - 1]}</h2>
+                  <h2 className="sm:text-xl lg:text-2xl font-semibold text-purple-300">{PAGE_TITLES[currentPage - 1]}</h2>
                 </div>
               </div>
 
