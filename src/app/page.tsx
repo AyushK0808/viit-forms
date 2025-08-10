@@ -1,295 +1,400 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import Head from 'next/head';
-import { Poppins } from 'next/font/google';
-import { BackgroundBeamsWithCollision } from './components/bgwithcollisions';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, User, MapPin, Users, CheckCircle } from 'lucide-react';
+import ProgressBar from './components/progressBar';
+import Toast from './components/Toast';
+import PersonalInfoForm from './components/pages/Personalinfo';
+import JourneyForm from './components/pages/Journey';
+import TeamBondingForm from './components/pages/TeamBonding';
 
-// Define font
-const poppins = Poppins({ 
-  weight: ['400', '700'],
-  subsets: ['latin'],
-  variable: '--font-poppins'
-});
-
-// Define form data interface
-interface MemberFormData {
+// Types
+interface PersonalInfo {
   name: string;
+  regNumber: string;
+  yearOfStudy: string;
   phoneNumber: string;
-  email: string;
-  regNo: string;
+  branchSpecialization: string;
   gender: string;
-  birthdate: string;
-  quirkyDetail: string;
+  vitEmail: string;
+  personalEmail: string;
+  domain: string;
+  additionalDomains: string;
+  joinMonth: string;
+  otherOrganizations: string;
+  cgpa: string;
 }
 
-// Define toast notification interface
-interface ToastNotification {
-  show: boolean;
-  message: string;
-  type: string;
+interface Journey {
+  contribution: string;
+  projects: string;
+  events: string;
+  skillsLearned: string;
+  overallContribution: number;
+  techContribution: number;
 }
 
-// Define validation errors interface
+interface TeamBonding {
+  memberBonding: number;
+  likelyToSeekHelp: number;
+  clubEnvironment: string;
+  likedCharacteristics: string;
+}
+
+interface FormData {
+  personalInfo: PersonalInfo;
+  journey: Journey;
+  teamBonding: TeamBonding;
+}
+
 interface ValidationErrors {
-  name?: string;
-  phoneNumber?: string;
-  email?: string;
-  regNo?: string;
+  [key: string]: string;
 }
 
-// Define member interface
-interface Member {
-  _id: string;
-  name: string;
-  phoneNumber: string;
-  email: string;
-  regNo: string;
-  gender: string;
-  birthdate: string;
-  quirkyDetail: string;
-  createdAt: string;
-  __v: number;
+interface FormNavigationProps {
+  currentPage: number;
+  totalPages: number;
+  isSubmitting: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  onSubmit: () => void;
 }
 
-export default function Home() {
-  const [formData, setFormData] = useState<MemberFormData>({
+const FormNavigation: React.FC<FormNavigationProps> = ({
+  currentPage,
+  totalPages,
+  isSubmitting,
+  onPrev,
+  onNext,
+  onSubmit
+}) => {
+  return (
+    <div className="flex justify-between items-center pt-6 border-t border-purple-500/30">
+      <button
+        onClick={onPrev}
+        disabled={currentPage === 1}
+        className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 backdrop-blur-sm border ${
+          currentPage === 1
+            ? 'text-gray-400 cursor-not-allowed border-gray-600/30 bg-gray-800/30'
+            : 'text-purple-300 hover:bg-purple-900/30 border-purple-500/30 hover:border-purple-400 hover:text-purple-200'
+        }`}
+      >
+        <ChevronLeft className="w-5 h-5 mr-1" />
+        Previous
+      </button>
+
+      <div className="text-sm text-purple-300 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-purple-500/20">
+        Page {currentPage} of {totalPages}
+      </div>
+
+      {currentPage === totalPages ? (
+        <button
+          onClick={onSubmit}
+          disabled={isSubmitting}
+          className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 backdrop-blur-sm border relative overflow-hidden group ${
+            isSubmitting
+              ? 'bg-gray-700/50 text-gray-300 cursor-not-allowed border-gray-600/30'
+              : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white border-green-500/30 hover:border-green-400 shadow-lg shadow-green-900/50'
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-5 h-5 mr-1" />
+              Submit
+              <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+            </>
+          )}
+        </button>
+      ) : (
+        <button
+          onClick={onNext}
+          className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg font-medium transition-all duration-200 backdrop-blur-sm border border-purple-500/30 hover:border-purple-400 shadow-lg shadow-purple-900/50 relative overflow-hidden group"
+        >
+          Next
+          <ChevronRight className="w-5 h-5 ml-1" />
+          <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-400 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+        </button>
+      )}
+    </div>
+  );
+};
+
+// Constants
+const TOTAL_PAGES = 3;
+const PAGE_TITLES = ['Personal Information', 'Your Journey', 'Team Bonding'];
+const PAGE_ICONS = [User, MapPin, Users];
+
+// Initial form data
+const initialFormData: FormData = {
+  personalInfo: {
     name: '',
+    regNumber: '',
+    yearOfStudy: '',
     phoneNumber: '',
-    email: '',
-    regNo: '',
+    branchSpecialization: '',
     gender: '',
-    birthdate: '',
-    quirkyDetail: '',
-  });
-  
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [toast, setToast] = useState<ToastNotification>({ show: false, message: '', type: '' });
+    vitEmail: '',
+    personalEmail: '',
+    domain: '',
+    additionalDomains: '',
+    joinMonth: '',
+    otherOrganizations: '',
+    cgpa: ''
+  },
+  journey: {
+    contribution: '',
+    projects: '',
+    events: '',
+    skillsLearned: '',
+    overallContribution: 5,
+    techContribution: 5
+  },
+  teamBonding: {
+    memberBonding: 5,
+    likelyToSeekHelp: 5,
+    clubEnvironment: '',
+    likedCharacteristics: ''
+  }
+};
+
+// Main Component
+export default function VinnovateITForm() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [existingMembers, setExistingMembers] = useState<Member[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'info' as const });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch existing members on component mount
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const res = await fetch('/api/members', {
-          method: 'GET',
-        });
-        
-        const data = await res.json();
-        
-        if (data.success && Array.isArray(data.data)) {
-          setExistingMembers(data.data);
-        } else {
-          console.error('Failed to fetch members or invalid data format');
-        }
-      } catch (error) {
-        console.error('Error fetching members:', error);
-      } finally {
-        setIsInitialLoading(false);
-      }
-    };
-    
-    fetchMembers();
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    
-    // Clear error when field is modified
-    if (errors[name as keyof ValidationErrors]) {
-      setErrors({ ...errors, [name]: undefined });
-    }
+  // Utility functions
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  // Hide toast after 5 seconds
+  const validatePhoneNumber = (phone: string): boolean => {
+    return /^[6-9]\d{9}$/.test(phone);
+  };
+
+  const validateCGPA = (cgpa: string): boolean => {
+    const cgpaNum = parseFloat(cgpa);
+    return !isNaN(cgpaNum) && cgpaNum >= 0 && cgpaNum <= 10;
+  };
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ show: true, message, type });
+  };
+
   useEffect(() => {
     if (toast.show) {
       const timer = setTimeout(() => {
         setToast({ ...toast, show: false });
       }, 5000);
-      
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [toast.show]);
 
-  // Validation function
-  const validateForm = (): boolean => {
+  // Update functions
+  const updatePersonalInfo = (field: keyof PersonalInfo, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      personalInfo: { ...prev.personalInfo, [field]: value }
+    }));
+  };
+
+  const updateJourney = (field: keyof Journey, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      journey: { ...prev.journey, [field]: value }
+    }));
+  };
+
+  const updateTeamBonding = (field: keyof TeamBonding, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      teamBonding: { ...prev.teamBonding, [field]: value }
+    }));
+  };
+
+  // Validation functions
+  const validatePersonalInfo = (): boolean => {
     const newErrors: ValidationErrors = {};
-    let isValid = true;
-    
-    // Regex patterns
-    const nameRegex = /^[a-zA-Z ]{2,50}$/;
-    const phoneRegex = /^[6-9]\d{9}$/; // Indian phone number format
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const regNoRegex = /^[a-zA-Z0-9-]{3,15}$/;
-    
-    // Name validation
-    if (!nameRegex.test(formData.name)) {
-      newErrors.name = "Please enter a valid name (2-50 alphabetic characters)";
-      isValid = false;
+    const { personalInfo } = formData;
+
+    if (!personalInfo.name.trim()) newErrors.name = 'Name is required';
+    if (!personalInfo.regNumber.trim()) newErrors.regNumber = 'Registration number is required';
+    if (!personalInfo.yearOfStudy) newErrors.yearOfStudy = 'Year of study is required';
+    if (!validatePhoneNumber(personalInfo.phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
     }
-    
-    // Phone validation
-    if (!phoneRegex.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Please enter a valid 10-digit phone number starting with 6-9";
-      isValid = false;
+    if (!personalInfo.branchSpecialization.trim()) newErrors.branchSpecialization = 'Branch and specialization is required';
+    if (!personalInfo.gender) newErrors.gender = 'Gender is required';
+    if (!validateEmail(personalInfo.vitEmail)) {
+      newErrors.vitEmail = 'Please enter a valid VIT email address';
     }
-    
-    // Email validation
-    if (!emailRegex.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-      isValid = false;
+    if (!validateEmail(personalInfo.personalEmail)) {
+      newErrors.personalEmail = 'Please enter a valid personal email address';
     }
-    
-    // Reg No validation
-    if (!regNoRegex.test(formData.regNo)) {
-      newErrors.regNo = "Please enter a valid registration number (3-15 alphanumeric characters)";
-      isValid = false;
+    if (!personalInfo.domain) newErrors.domain = 'Domain is required';
+    if (!personalInfo.joinMonth) newErrors.joinMonth = 'Join month is required';
+    if (!personalInfo.otherOrganizations.trim()) newErrors.otherOrganizations = 'This field is required (write "None" if not applicable)';
+    if (!validateCGPA(personalInfo.cgpa)) {
+      newErrors.cgpa = 'Please enter a valid CGPA (0-10)';
     }
-    
+
     setErrors(newErrors);
-    return isValid;
+    return Object.keys(newErrors).length === 0;
   };
 
-  // Check if registration number already exists
-  const checkRegNoExists = (regNo: string): boolean => {
-    return existingMembers.some(member => member.regNo === regNo);
+  const validateJourney = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    const { journey } = formData;
+
+    if (!journey.contribution.trim()) newErrors.contribution = 'Contribution description is required';
+    if (!journey.projects.trim()) newErrors.projects = 'Projects description is required';
+    if (!journey.events.trim()) newErrors.events = 'Events description is required';
+    if (!journey.skillsLearned.trim()) newErrors.skillsLearned = 'Skills learned description is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    // Validate form first
-    if (!validateForm()) {
-      setToast({ 
-        show: true, 
-        message: 'Please fix the errors in the form', 
-        type: 'error'
-      });
+  const validateTeamBonding = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    const { teamBonding } = formData;
+
+    if (!teamBonding.clubEnvironment.trim()) newErrors.clubEnvironment = 'Club environment description is required';
+    if (!teamBonding.likedCharacteristics.trim()) newErrors.likedCharacteristics = 'Liked characteristics description is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateCurrentPage = (): boolean => {
+    switch (currentPage) {
+      case 1: return validatePersonalInfo();
+      case 2: return validateJourney();
+      case 3: return validateTeamBonding();
+      default: return true;
+    }
+  };
+
+  // Navigation functions
+  const handleNext = () => {
+    if (validateCurrentPage()) {
+      setCurrentPage(prev => Math.min(prev + 1, TOTAL_PAGES));
+      setErrors({});
+    } else {
+      showToast('Please fill in all required fields correctly', 'error');
+    }
+  };
+
+  const handlePrev = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+    setErrors({});
+  };
+
+  const handleSubmit = async () => {
+    if (!validateCurrentPage()) {
+      showToast('Please fill in all required fields', 'error');
       return;
     }
-    
+
     setIsSubmitting(true);
     
     try {
-      // Check if registration number already exists using our local state
-      const regNoExists = checkRegNoExists(formData.regNo);
-      
-      if (regNoExists) {
-        setToast({ 
-          show: true, 
-          message: 'This registration number has already been registered', 
-          type: 'error'
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // If not exists, proceed with submission
-      const res = await fetch('/api/members', {
+      const response = await fetch('/api/members', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Something went wrong');
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          showToast('This registration number has already been submitted', 'error');
+        } else if (data.validationErrors) {
+          // Handle server-side validation errors
+          setErrors(data.validationErrors);
+          showToast('Please fix the validation errors', 'error');
+        } else {
+          throw new Error(data.error || 'Submission failed');
+        }
+        return;
       }
       
-      // Add the new member to our local state
-      if (data.success && data.data) {
-        setExistingMembers([...existingMembers, data.data]);
-      }
-      
-      setToast({ 
-        show: true, 
-        message: 'Member details saved successfully!', 
-        type: 'success'
-      });
+      showToast('Form submitted successfully! Thank you for your submission.', 'success');
       
       // Reset form
-      setFormData({
-        name: '',
-        phoneNumber: '',
-        email: '',
-        regNo: '',
-        gender: '',
-        birthdate: '',
-        quirkyDetail: '',
-      });
-      
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      setToast({ 
-        show: true, 
-        message: errorMessage, 
-        type: 'error'
-      });
+      setFormData(initialFormData);
+      setCurrentPage(1);
+      setErrors({});
+    } catch (error) {
+      console.error('Submission error:', error);
+      showToast('Failed to submit form. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Render current page content
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 1:
+        return (
+          <PersonalInfoForm
+            formData={formData.personalInfo}
+            errors={errors}
+            onChange={updatePersonalInfo}
+          />
+        );
+      case 2:
+        return (
+          <JourneyForm
+            formData={formData.journey}
+            errors={errors}
+            onChange={updateJourney}
+          />
+        );
+      case 3:
+        return (
+          <TeamBondingForm
+            formData={formData.teamBonding}
+            errors={errors}
+            onChange={updateTeamBonding}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const CurrentIcon = PAGE_ICONS[currentPage - 1];
+
   return (
     <div className="relative overflow-hidden">
-      {/* BackgroundBeams positioned with lower z-index */}
-      <div className="absolute inset-0 z-0">
-        <BackgroundBeamsWithCollision className="h-full">
-          {/* Empty div to satisfy children prop requirement */}
-          <div></div>
-        </BackgroundBeamsWithCollision>
-      </div>
+      {/* Moving gradient background with purple accents */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-950 to-black animate-gradientMove z-0"></div>
+      
+      {/* Black overlay */}
+      <div className="absolute inset-0 bg-black opacity-55 z-0"></div>
+      
+      {/* Purple dotted pattern overlay */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSgzMCkiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiM4QjVDRjYiIG9wYWNpdHk9IjAuMyIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==')] opacity-20 z-0"></div>
+      
+      {/* Purple glowing orbs in background */}
+      <div className="purple-orb-1"></div>
+      <div className="purple-orb-2"></div>
+      <div className="purple-orb-3"></div>
 
-      <div className={`min-h-screen w-screen text-white ${poppins.className} relative z-10`}>
-        {/* Moving gradient background with purple accents */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-950 to-black animate-gradientMove z-0"></div>
-        
-        {/* Slightly reduced black overlay to let purple pop */}
-        <div className="absolute inset-0 bg-black opacity-55 z-0"></div>
-        
-        {/* Purple dotted pattern overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSgzMCkiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiM4QjVDRjYiIG9wYWNpdHk9IjAuMyIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==')] opacity-20 z-0"></div>
-        
-        {/* Purple glowing orbs in background */}
-        <div className="purple-orb-1"></div>
-        <div className="purple-orb-2"></div>
-        <div className="purple-orb-3"></div>
-        
-        <Head>
-          <title>Core Member Registration</title>
-          <meta name="description" content="Register core member details" />
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
-
-        {/* Toast Notification */}
-        {toast.show && (
-          <div 
-            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-all duration-500 ease-in-out animate-bounce ${
-              toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            } z-50 max-w-md font-poppins`}
-          >
-            <p className="font-bold">{toast.message}</p>
-          </div>
-        )}
-
-        <main className="container mx-auto px-4 py-12 md:max-w-2xl lg:max-w-4xl xl:max-w-5xl relative z-20">
-          {/* Loading overlay while fetching initial data */}
-          {isInitialLoading && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-black bg-opacity-70 p-6 rounded-lg shadow-lg border border-purple-500 flex flex-col items-center">
-                <div className="loader-ring w-12 h-12 border-4"></div>
-                <p className="mt-4 text-purple-300">Loading member data...</p>
-              </div>
-            </div>
-          )}
-          
+      <div className="min-h-screen text-white py-12 px-4 relative z-10">
+        <div className="max-w-4xl mx-auto">
           {/* Logo Image with purple glow */}
           <div className="flex justify-center mb-8 relative">
             <div className="absolute -inset-2 bg-purple-500 opacity-20 blur-xl rounded-full"></div>
@@ -299,24 +404,8 @@ export default function Home() {
               className="w-48 h-auto relative z-10"
             />
           </div>
-          
-          {/* Enhanced Title with Glowing Underline */}
-          <div className="relative mb-12 text-center">
-            <h1 className="text-5xl font-extrabold text-purple-400 font-poppins inline-block relative text-shadow-glow">
-              Core Member Registration
-            </h1>
-            {/* Purple glowing underline */}
-            <div className="h-1 w-3/4 mx-auto mt-2 rounded-full bg-gradient-to-r from-purple-400 via-purple-700 to-purple-400 relative overflow-hidden">
-              <div className="absolute -inset-1 blur-md bg-purple-500 opacity-70"></div>
-              <div className="absolute inset-0 animate-pulse-slow bg-purple-300 opacity-50"></div>
-            </div>
-          </div>
-          
-          {/* Form with Black Background and Purple Accent Border */}
-          <form 
-            onSubmit={handleSubmit} 
-            className="bg-black bg-opacity-70 backdrop-filter backdrop-blur-xl shadow-2xl rounded-lg px-8 pt-6 pb-8 mb-4 relative transform transition-all duration-300 hover:shadow-purple-500/30 z-30"
-          >
+
+          <div className="bg-black bg-opacity-70 backdrop-filter backdrop-blur-xl shadow-2xl rounded-lg p-8 relative transform transition-all duration-300 hover:shadow-purple-500/30">
             {/* Purple accent border */}
             <div className="absolute inset-0 rounded-lg border border-purple-500 opacity-30"></div>
             
@@ -328,314 +417,157 @@ export default function Home() {
             
             {/* Subtle purple glow */}
             <div className="absolute -inset-0.5 bg-purple-900 opacity-10 blur-xl rounded-lg"></div>
-            
-            <div className="relative z-10">
-              <div className="md:grid md:grid-cols-2 md:gap-6">
-                <div className="mb-4 transform transition-all duration-300 hover:translate-x-2 group">
-                  <label className="block text-purple-300 text-sm font-bold mb-2 font-poppins" htmlFor="name">
-                    Name
-                  </label>
-                  <div className="relative">
-                    <input
-                      className={`shadow appearance-none border ${errors.name ? 'border-red-500' : 'border-purple-500/30'} bg-black bg-opacity-60 backdrop-blur-sm rounded-lg w-full py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 font-poppins`}
-                      id="name"
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      placeholder="Your name"
-                    />
-                    <div className="absolute inset-0 border border-purple-500/0 rounded-lg group-hover:border-purple-500/30 transition-all duration-300 pointer-events-none"></div>
-                    {errors.name && (
-                      <p className="text-red-400 text-xs mt-1">{errors.name}</p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="mb-4 transform transition-all duration-300 hover:translate-x-2 group">
-                  <label className="block text-purple-300 text-sm font-bold mb-2 font-poppins" htmlFor="phoneNumber">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <input
-                      className={`shadow appearance-none border ${errors.phoneNumber ? 'border-red-500' : 'border-purple-500/30'} bg-black bg-opacity-60 backdrop-blur-sm rounded-lg w-full py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 font-poppins`}
-                      id="phoneNumber"
-                      type="tel"
-                      name="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={handleChange}
-                      required
-                      placeholder="Your phone number"
-                    />
-                    <div className="absolute inset-0 border border-purple-500/0 rounded-lg group-hover:border-purple-500/30 transition-all duration-300 pointer-events-none"></div>
-                    {errors.phoneNumber && (
-                      <p className="text-red-400 text-xs mt-1">{errors.phoneNumber}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="md:grid md:grid-cols-2 md:gap-6">
-                <div className="mb-4 transform transition-all duration-300 hover:translate-x-2 group">
-                  <label className="block text-purple-300 text-sm font-bold mb-2 font-poppins" htmlFor="email">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <input
-                      className={`shadow appearance-none border ${errors.email ? 'border-red-500' : 'border-purple-500/30'} bg-black bg-opacity-60 backdrop-blur-sm rounded-lg w-full py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 font-poppins`}
-                      id="email"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="Your email"
-                    />
-                    <div className="absolute inset-0 border border-purple-500/0 rounded-lg group-hover:border-purple-500/30 transition-all duration-300 pointer-events-none"></div>
-                    {errors.email && (
-                      <p className="text-red-400 text-xs mt-1">{errors.email}</p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="mb-4 transform transition-all duration-300 hover:translate-x-2 group">
-                  <label className="block text-purple-300 text-sm font-bold mb-2 font-poppins" htmlFor="regNo">
-                    Registration Number
-                  </label>
-                  <div className="relative">
-                    <input
-                      className={`shadow appearance-none border ${errors.regNo ? 'border-red-500' : 'border-purple-500/30'} bg-black bg-opacity-60 backdrop-blur-sm rounded-lg w-full py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 font-poppins`}
-                      id="regNo"
-                      type="text"
-                      name="regNo"
-                      value={formData.regNo}
-                      onChange={handleChange}
-                      required
-                      placeholder="Your registration number"
-                    />
-                    <div className="absolute inset-0 border border-purple-500/0 rounded-lg group-hover:border-purple-500/30 transition-all duration-300 pointer-events-none"></div>
-                    {errors.regNo && (
-                      <p className="text-red-400 text-xs mt-1">{errors.regNo}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="md:grid md:grid-cols-2 md:gap-6">
-                <div className="mb-4 transform transition-all duration-300 hover:translate-x-2 group">
-                  <label className="block text-purple-300 text-sm font-bold mb-2 font-poppins" htmlFor="gender">
-                    Gender
-                  </label>
-                  <div className="relative">
-                    <select
-                      className="shadow appearance-none border border-purple-500/30 bg-black bg-opacity-60 backdrop-blur-sm rounded-lg w-full py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 font-poppins"
-                      id="gender"
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    <div className="absolute inset-0 border border-purple-500/0 rounded-lg group-hover:border-purple-500/30 transition-all duration-300 pointer-events-none"></div>
-                  </div>
-                </div>
-                
-                <div className="mb-4 transform transition-all duration-300 hover:translate-x-2 group">
-  <label className="block text-purple-300 text-sm font-bold mb-2 font-poppins" htmlFor="birthdate">
-    Birth Date
-  </label>
-  <div className="relative">
-    <input 
-      type="date" 
-      name="birthdate" 
-      id="birthdate"
-      value={formData.birthdate} 
-      onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
-      required
-      className={`shadow appearance-none border border-purple-500/30 bg-black bg-opacity-60 backdrop-blur-sm rounded-lg w-full py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 font-poppins`}
-    />
-    <div className="absolute right-3 top-2.5 pointer-events-none text-purple-300">
-      📅
-    </div>
-  </div>
-</div>
-</div>
 
-              
-              <div className="mb-6 transform transition-all duration-300 hover:translate-x-2 group">
-                <label className="block text-purple-300 text-sm font-bold mb-2 font-poppins" htmlFor="quirkyDetail">
-                  One Quirky Detail
-                </label>
-                <div className="relative">
-                  <textarea
-                    className="shadow appearance-none border border-purple-500/30 bg-black bg-opacity-60 backdrop-blur-sm rounded-lg w-full py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 h-24 font-poppins"
-                    id="quirkyDetail"
-                    name="quirkyDetail"
-                    value={formData.quirkyDetail}
-                    onChange={handleChange}
-                    required
-                    placeholder="Share something interesting about yourself!"
-                  />
-                  <div className="absolute inset-0 border border-purple-500/0 rounded-lg group-hover:border-purple-500/30 transition-all duration-300 pointer-events-none"></div>
+            <div className="relative z-10">
+              {/* Enhanced Title with Glowing Underline */}
+              <div className="relative mb-8 text-center">
+                <h1 className="text-4xl font-extrabold text-purple-400 inline-block relative text-shadow-glow">
+                  VinnovateIT Form
+                </h1>
+                {/* Purple glowing underline */}
+                <div className="h-1 w-3/4 mx-auto mt-2 rounded-full bg-gradient-to-r from-purple-400 via-purple-700 to-purple-400 relative overflow-hidden">
+                  <div className="absolute -inset-1 blur-md bg-purple-500 opacity-70"></div>
+                  <div className="absolute inset-0 animate-pulse-slow bg-purple-300 opacity-50"></div>
+                </div>
+                <p className="text-purple-300 mt-4">Complete all sections to submit your form</p>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-8">
+                <ProgressBar currentPage={currentPage} totalPages={TOTAL_PAGES} />
+              </div>
+
+              {/* Page Header */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="flex items-center bg-black/30 backdrop-blur-sm px-6 py-3 rounded-full border border-purple-500/30">
+                  <CurrentIcon className="w-8 h-8 text-purple-400 mr-3" />
+                  <h2 className="text-2xl font-semibold text-purple-300">{PAGE_TITLES[currentPage - 1]}</h2>
                 </div>
               </div>
-              
-              <div className="flex items-center justify-center">
-                <div className="relative">
-                  {/* Purple glow behind button */}
-                  <div className="absolute inset-0 bg-purple-600 opacity-20 blur-md rounded-full"></div>
-                  
-                  <button
-                    className={`bg-gradient-to-r from-black to-purple-800 hover:from-purple-900 hover:to-black text-white font-bold py-3 px-8 rounded-full focus:outline-none focus:shadow-outline transform transition-all duration-300 hover:scale-105 hover:rotate-1 relative overflow-hidden group shadow-lg shadow-purple-900/50 font-poppins tracking-wider backdrop-blur-sm border border-purple-500/30`}
-                    type="submit"
-                    disabled={isSubmitting}
-                  >
-                    <span className="relative z-10 uppercase">
-                      {isSubmitting ? 'Processing...' : 'Register'}
-                    </span>
-                    <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-600 to-black opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                    
-                    {/* Improved loading animation with purple */}
-                    {isSubmitting && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="loader-ring"></div>
-                      </div>
-                    )}
-                  </button>
-                </div>
+
+              {/* Form Content */}
+              <div className="mb-8">
+                {renderCurrentPage()}
               </div>
+
+              {/* Navigation */}
+              <FormNavigation
+                currentPage={currentPage}
+                totalPages={TOTAL_PAGES}
+                isSubmitting={isSubmitting}
+                onPrev={handlePrev}
+                onNext={handleNext}
+                onSubmit={handleSubmit}
+              />
             </div>
-          </form>
-          
+          </div>
+
           {/* Purple accent line at bottom */}
           <div className="w-full max-w-xs mx-auto h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-50 mt-6"></div>
-        </main>
-
-        {/* Custom animation for background, text glow, and loader */}
-        <style jsx global>{`
-          @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          
-          .animate-gradientMove {
-            background-size: 400% 400%;
-            animation: gradientMove 15s ease infinite;
-          }
-          
-          .animate-pulse-slow {
-            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          }
-          
-          @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-          }
-          
-          .text-shadow-glow {
-            text-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
-          }
-          
-          /* Loader animations with purple color */
-          .loader-ring {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(167, 139, 250, 0.3);
-            border-radius: 50%;
-            border-top-color: rgb(167, 139, 250);
-            animation: spin 0.8s ease-in-out infinite;
-          }
-          
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          
-          /* Purple orbs */
-          .purple-orb-1, .purple-orb-2, .purple-orb-3 {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: 1;
-            pointer-events: none;
-          }
-          
-          .purple-orb-1 {
-            width: 200px;
-            height: 200px;
-            background-color: rgba(139, 92, 246, 0.2);
-            top: 10%;
-            left: 5%;
-            animation: floatOrb 20s ease-in-out infinite;
-          }
-          
-          .purple-orb-2 {
-            width: 300px;
-            height: 300px;
-            background-color: rgba(139, 92, 246, 0.15);
-            bottom: 10%;
-            right: 5%;
-            animation: floatOrb 25s ease-in-out infinite reverse;
-          }
-          
-          .purple-orb-3 {
-            width: 150px;
-            height: 150px;
-            background-color: rgba(139, 92, 246, 0.25);
-            top: 50%;
-            right: 20%;
-            animation: floatOrb 15s ease-in-out infinite 5s;
-          }
-          
-          @keyframes floatOrb {
-            0%, 100% { transform: translate(0, 0); }
-            25% { transform: translate(50px, 25px); }
-            50% { transform: translate(0, 50px); }
-            75% { transform: translate(-50px, 25px); }
-          }
-          
-          /* Purple sparkles */
-          @keyframes sparkle {
-            0%, 100% { opacity: 0; transform: scale(0); }
-            50% { opacity: 0.7; transform: scale(1); }
-          }
-          
-          .sparkle {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            background-color: #a78bfa;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 2;
-          }
-          
-          /* Input focus effect */
-          input:focus, select:focus, textarea:focus {
-            box-shadow: 0 0 0 2px rgba(139, 92,246, 0.5);
-          }
-        `}</style>
-        
-        {/* Purple sparkles */}
-        {Array.from({ length: 30 }).map((_, index) => (
-          <div 
-            key={index}
-            className="sparkle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `sparkle ${3 + Math.random() * 5}s ease-in-out infinite ${Math.random() * 5}s`
-            }}
-          ></div>
-        ))}
+        </div>
       </div>
+
+      {/* Toast Notification */}
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
+
+      {/* Purple sparkles */}
+      {Array.from({ length: 30 }).map((_, index) => (
+        <div 
+          key={index}
+          className="sparkle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animation: `sparkle ${3 + Math.random() * 5}s ease-in-out infinite ${Math.random() * 5}s`
+          }}
+        ></div>
+      ))}
+
+      {/* Custom Styles */}
+      <style jsx global>{`
+        @keyframes gradientMove {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        .animate-gradientMove {
+          background-size: 400% 400%;
+          animation: gradientMove 15s ease infinite;
+        }
+        
+        .animate-pulse-slow {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+        
+        .text-shadow-glow {
+          text-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
+        
+        /* Purple orbs */
+        .purple-orb-1, .purple-orb-2, .purple-orb-3 {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(60px);
+          z-index: 1;
+          pointer-events: none;
+        }
+        
+        .purple-orb-1 {
+          width: 200px;
+          height: 200px;
+          background-color: rgba(139, 92, 246, 0.2);
+          top: 10%;
+          left: 5%;
+          animation: floatOrb 20s ease-in-out infinite;
+        }
+        
+        .purple-orb-2 {
+          width: 300px;
+          height: 300px;
+          background-color: rgba(139, 92, 246, 0.15);
+          bottom: 10%;
+          right: 5%;
+          animation: floatOrb 25s ease-in-out infinite reverse;
+        }
+        
+        .purple-orb-3 {
+          width: 150px;
+          height: 150px;
+          background-color: rgba(139, 92, 246, 0.25);
+          top: 50%;
+          right: 20%;
+          animation: floatOrb 15s ease-in-out infinite 5s;
+        }
+        
+        @keyframes floatOrb {
+          0%, 100% { transform: translate(0, 0); }
+          25% { transform: translate(50px, 25px); }
+          50% { transform: translate(0, 50px); }
+          75% { transform: translate(-50px, 25px); }
+        }
+        
+        /* Purple sparkles */
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 0.7; transform: scale(1); }
+        }
+        
+        .sparkle {
+          position: absolute;
+          width: 3px;
+          height: 3px;
+          background-color: #a78bfa;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 2;
+        }
+      `}</style>
     </div>
   );
 }
