@@ -126,7 +126,7 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ formData, errors, o
           value={formData.domain}
           onChange={(value) => onChange('domain', value)}
           required
-          options={['Tech', 'Design', 'Management', 'Marketing', 'Content']}
+          options={['Tech', 'Design', 'Management']}
           error={errors.domain}
         />
         <InputField

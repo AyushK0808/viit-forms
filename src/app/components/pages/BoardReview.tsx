@@ -26,9 +26,7 @@ interface BoardReviewFormProps {
 const BoardReviewForm: React.FC<BoardReviewFormProps> = ({ formData, errors, onChange }) => {
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Board Review</h3>
-      </div>
+      
 
       <div className="grid md:grid-cols-2 gap-6">
         <RatingField
