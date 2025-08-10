@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, User, MapPin, Users, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, MapPin, Users, Target, Star, MessageSquare, CheckCircle } from 'lucide-react';
 import ProgressBar from './components/progressBar';
 import Toast from './components/Toast';
 import PersonalInfoForm from './components/pages/Personalinfo';
 import JourneyForm from './components/pages/Journey';
 import TeamBondingForm from './components/pages/TeamBonding';
+import FutureForm from './components/pages/Future';
+import BoardReviewForm from './components/pages/BoardReview';
+import GeneralFeedbackForm from './components/pages/GeneralFeedback';
 
 // Types
 interface PersonalInfo {
@@ -32,6 +35,10 @@ interface Journey {
   skillsLearned: string;
   overallContribution: number;
   techContribution: number;
+  managementContribution: number;
+  designContribution: number;
+  challenges: string;
+  howChanged: string;
 }
 
 interface TeamBonding {
@@ -39,12 +46,49 @@ interface TeamBonding {
   likelyToSeekHelp: number;
   clubEnvironment: string;
   likedCharacteristics: string;
+  dislikedCharacteristics: string;
+  favoriteTeammates: string;
+  favoriteTeammatesTraits: string;
+  improvementSuggestions: string;
+}
+
+interface Future {
+  whyJoinedVinnovateIT: string;
+  wishlistFulfillment: string;
+  commitmentRating: number;
+  commitmentJustification: string;
+  leadershipPreference: string;
+  immediateChanges: string;
+  upcomingYearChanges: string;
+  preferredFellowLeaders: string;
+  skillsToLearn: string;
+  domainsToExplore: string;
+}
+
+interface BoardReview {
+  overallBoardPerformance: number;
+  boardCommunication: number;
+  boardAccessibility: number;
+  boardDecisionMaking: number;
+  mostEffectiveBoardMember: string;
+  boardImprovementSuggestions: string;
+  boardAppreciation: string;
+}
+
+interface GeneralFeedback {
+  overallClubExperience: number;
+  recommendToOthers: number;
+  additionalComments: string;
+  anonymousFeedback: string;
 }
 
 interface FormData {
   personalInfo: PersonalInfo;
   journey: Journey;
   teamBonding: TeamBonding;
+  future: Future;
+  boardReview: BoardReview;
+  generalFeedback: GeneralFeedback;
 }
 
 interface ValidationErrors {
@@ -125,9 +169,16 @@ const FormNavigation: React.FC<FormNavigationProps> = ({
 };
 
 // Constants
-const TOTAL_PAGES = 3;
-const PAGE_TITLES = ['Personal Information', 'Your Journey', 'Team Bonding'];
-const PAGE_ICONS = [User, MapPin, Users];
+const TOTAL_PAGES = 6;
+const PAGE_TITLES = [
+  'Personal Information', 
+  'Your Journey', 
+  'Team Bonding', 
+  'Future Plans', 
+  'Board Review', 
+  'General Feedback'
+];
+const PAGE_ICONS = [User, MapPin, Users, Target, Star, MessageSquare];
 
 // Initial form data
 const initialFormData: FormData = {
@@ -152,13 +203,48 @@ const initialFormData: FormData = {
     events: '',
     skillsLearned: '',
     overallContribution: 5,
-    techContribution: 5
+    techContribution: 5,
+    managementContribution: 5,
+    designContribution: 5,
+    challenges: '',
+    howChanged: ''
   },
   teamBonding: {
     memberBonding: 5,
     likelyToSeekHelp: 5,
     clubEnvironment: '',
-    likedCharacteristics: ''
+    likedCharacteristics: '',
+    dislikedCharacteristics: '',
+    favoriteTeammates: '',
+    favoriteTeammatesTraits: '',
+    improvementSuggestions: ''
+  },
+  future: {
+    whyJoinedVinnovateIT: '',
+    wishlistFulfillment: '',
+    commitmentRating: 5,
+    commitmentJustification: '',
+    leadershipPreference: '',
+    immediateChanges: '',
+    upcomingYearChanges: '',
+    preferredFellowLeaders: '',
+    skillsToLearn: '',
+    domainsToExplore: ''
+  },
+  boardReview: {
+    overallBoardPerformance: 5,
+    boardCommunication: 5,
+    boardAccessibility: 5,
+    boardDecisionMaking: 5,
+    mostEffectiveBoardMember: '',
+    boardImprovementSuggestions: '',
+    boardAppreciation: ''
+  },
+  generalFeedback: {
+    overallClubExperience: 5,
+    recommendToOthers: 5,
+    additionalComments: '',
+    anonymousFeedback: ''
   }
 };
 
@@ -219,6 +305,27 @@ export default function VinnovateITForm() {
     }));
   };
 
+  const updateFuture = (field: keyof Future, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      future: { ...prev.future, [field]: value }
+    }));
+  };
+
+  const updateBoardReview = (field: keyof BoardReview, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      boardReview: { ...prev.boardReview, [field]: value }
+    }));
+  };
+
+  const updateGeneralFeedback = (field: keyof GeneralFeedback, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      generalFeedback: { ...prev.generalFeedback, [field]: value }
+    }));
+  };
+
   // Validation functions
   const validatePersonalInfo = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -257,6 +364,8 @@ export default function VinnovateITForm() {
     if (!journey.projects.trim()) newErrors.projects = 'Projects description is required';
     if (!journey.events.trim()) newErrors.events = 'Events description is required';
     if (!journey.skillsLearned.trim()) newErrors.skillsLearned = 'Skills learned description is required';
+    if (!journey.challenges.trim()) newErrors.challenges = 'Challenges description is required';
+    if (!journey.howChanged.trim()) newErrors.howChanged = 'How VinnovateIT changed you description is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -268,6 +377,50 @@ export default function VinnovateITForm() {
 
     if (!teamBonding.clubEnvironment.trim()) newErrors.clubEnvironment = 'Club environment description is required';
     if (!teamBonding.likedCharacteristics.trim()) newErrors.likedCharacteristics = 'Liked characteristics description is required';
+    if (!teamBonding.dislikedCharacteristics.trim()) newErrors.dislikedCharacteristics = 'Disliked characteristics description is required';
+    if (!teamBonding.favoriteTeammates.trim()) newErrors.favoriteTeammates = 'Favorite teammates description is required';
+    if (!teamBonding.favoriteTeammatesTraits.trim()) newErrors.favoriteTeammatesTraits = 'Favorite teammates traits description is required';
+    if (!teamBonding.improvementSuggestions.trim()) newErrors.improvementSuggestions = 'Improvement suggestions are required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateFuture = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    const { future } = formData;
+
+    if (!future.whyJoinedVinnovateIT.trim()) newErrors.whyJoinedVinnovateIT = 'Why you joined VinnovateIT is required';
+    if (!future.wishlistFulfillment.trim()) newErrors.wishlistFulfillment = 'Wishlist fulfillment description is required';
+    if (!future.commitmentJustification.trim()) newErrors.commitmentJustification = 'Commitment justification is required';
+    if (!future.leadershipPreference.trim()) newErrors.leadershipPreference = 'Leadership preference is required';
+    if (!future.immediateChanges.trim()) newErrors.immediateChanges = 'Immediate changes description is required';
+    if (!future.upcomingYearChanges.trim()) newErrors.upcomingYearChanges = 'Upcoming year changes description is required';
+    if (!future.preferredFellowLeaders.trim()) newErrors.preferredFellowLeaders = 'Preferred fellow leaders description is required';
+    if (!future.skillsToLearn.trim()) newErrors.skillsToLearn = 'Skills to learn description is required';
+    if (!future.domainsToExplore.trim()) newErrors.domainsToExplore = 'Domains to explore description is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateBoardReview = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    const { boardReview } = formData;
+
+    if (!boardReview.mostEffectiveBoardMember.trim()) newErrors.mostEffectiveBoardMember = 'Most effective board member is required';
+    if (!boardReview.boardImprovementSuggestions.trim()) newErrors.boardImprovementSuggestions = 'Board improvement suggestions are required';
+    if (!boardReview.boardAppreciation.trim()) newErrors.boardAppreciation = 'Board appreciation is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateGeneralFeedback = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    const { generalFeedback } = formData;
+
+    if (!generalFeedback.additionalComments.trim()) newErrors.additionalComments = 'Additional comments are required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -278,6 +431,9 @@ export default function VinnovateITForm() {
       case 1: return validatePersonalInfo();
       case 2: return validateJourney();
       case 3: return validateTeamBonding();
+      case 4: return validateFuture();
+      case 5: return validateBoardReview();
+      case 6: return validateGeneralFeedback();
       default: return true;
     }
   };
@@ -368,6 +524,30 @@ export default function VinnovateITForm() {
             formData={formData.teamBonding}
             errors={errors}
             onChange={updateTeamBonding}
+          />
+        );
+      case 4:
+        return (
+          <FutureForm
+            formData={formData.future}
+            errors={errors}
+            onChange={updateFuture}
+          />
+        );
+      case 5:
+        return (
+          <BoardReviewForm
+            formData={formData.boardReview}
+            errors={errors}
+            onChange={updateBoardReview}
+          />
+        );
+      case 6:
+        return (
+          <GeneralFeedbackForm
+            formData={formData.generalFeedback}
+            errors={errors}
+            onChange={updateGeneralFeedback}
           />
         );
       default:
