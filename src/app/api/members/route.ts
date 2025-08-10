@@ -27,10 +27,6 @@ interface MongooseValidationError extends Error {
   };
 }
 
-interface MongoDuplicateKeyError extends Error {
-  code: 11000;
-}
-
 interface UpdateSubmissionBody {
   id: string;
   status?: string;
