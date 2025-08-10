@@ -2,11 +2,59 @@ import { NextRequest } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import FormSubmission from "@/models/Members";
 
+// Define interfaces for better type safety
+interface PersonalInfo {
+  regNumber: string;
+  domain?: string;
+}
+
+interface FormSubmissionBody {
+  personalInfo: PersonalInfo;
+  journey: unknown;
+  teamBonding: unknown;
+}
+
+interface ValidationErrors {
+  [key: string]: string;
+}
+
+interface MongooseValidationError extends Error {
+  name: 'ValidationError';
+  errors: {
+    [key: string]: {
+      message: string;
+    };
+  };
+}
+
+interface MongoDuplicateKeyError extends Error {
+  code: 11000;
+}
+
+interface UpdateSubmissionBody {
+  id: string;
+  status?: string;
+  reviewedBy?: string;
+  notes?: string;
+}
+
+interface QueryFilter {
+  status?: string;
+  'personalInfo.domain'?: string;
+}
+
+interface UpdateData {
+  status?: string;
+  reviewedBy?: string;
+  notes?: string;
+  reviewedAt?: Date;
+}
+
 export async function POST(req: NextRequest) {
   await dbConnect();
   
   try {
-    const body = await req.json();
+    const body = await req.json() as FormSubmissionBody;
     
     // Validate required sections
     if (!body.personalInfo || !body.journey || !body.teamBonding) {
@@ -59,15 +107,16 @@ export async function POST(req: NextRequest) {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Form submission error:', error);
 
     // Handle Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors: { [key: string]: string } = {};
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ValidationError') {
+      const validationError = error as MongooseValidationError;
+      const validationErrors: ValidationErrors = {};
       
-      Object.keys(error.errors).forEach(key => {
-        validationErrors[key] = error.errors[key].message;
+      Object.keys(validationError.errors).forEach(key => {
+        validationErrors[key] = validationError.errors[key].message;
       });
 
       return new Response(
@@ -84,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle duplicate key error
-    if (error.code === 11000) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -97,10 +146,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const errorMessage = error instanceof Error ? error.message : "Failed to submit form";
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || "Failed to submit form"
+        error: errorMessage
       }), 
       {
         status: 500,
@@ -121,7 +171,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     
     // Build query filter
-    const filter: any = {};
+    const filter: QueryFilter = {};
     if (status) filter.status = status;
     if (domain) filter['personalInfo.domain'] = domain;
     
@@ -157,13 +207,14 @@ export async function GET(req: NextRequest) {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching form submissions:', error);
     
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch form submissions";
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || "Failed to fetch form submissions"
+        error: errorMessage
       }), 
       {
         status: 500,
@@ -178,7 +229,7 @@ export async function PUT(req: NextRequest) {
   await dbConnect();
   
   try {
-    const body = await req.json();
+    const body = await req.json() as UpdateSubmissionBody;
     const { id, status, reviewedBy, notes } = body;
     
     if (!id) {
@@ -194,7 +245,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const updateData: any = {};
+    const updateData: UpdateData = {};
     if (status) updateData.status = status;
     if (reviewedBy) updateData.reviewedBy = reviewedBy;
     if (notes) updateData.notes = notes;
@@ -233,13 +284,14 @@ export async function PUT(req: NextRequest) {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating submission:', error);
     
+    const errorMessage = error instanceof Error ? error.message : "Failed to update submission";
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || "Failed to update submission"
+        error: errorMessage
       }), 
       {
         status: 500,
@@ -297,13 +349,14 @@ export async function DELETE(req: NextRequest) {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting submission:', error);
     
+    const errorMessage = error instanceof Error ? error.message : "Failed to delete submission";
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || "Failed to delete submission"
+        error: errorMessage
       }), 
       {
         status: 500,

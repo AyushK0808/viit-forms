@@ -27,12 +27,6 @@ interface FutureFormProps {
 
 // Future Form
 const FutureForm: React.FC<FutureFormProps> = ({ formData, errors, onChange }) => {
-  const leadershipOptions = [
-    { value: "board", label: "Board Position" },
-    { value: "senior_core", label: "Senior Core" },
-    { value: "both", label: "Either Board or Senior Core" },
-    { value: "neither", label: "Neither" }
-  ];
 
   return (
     <div className="space-y-6">
