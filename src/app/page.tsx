@@ -253,7 +253,15 @@ export default function VinnovateITForm() {
   const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [toast, setToast] = useState({ show: false, message: '', type: 'info' as const });
+  const [toast, setToast] = useState<{
+  show: boolean;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}>({
+  show: false,
+  message: '',
+  type: 'info',
+});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Utility functions
