@@ -14,6 +14,7 @@ import GeneralFeedbackForm from './components/pages/GeneralFeedback';
 import RestoreDialog from './components/RestoreDialog';
 import AutoSaveStatus from './components/AutoSaveStatus';
 import WarningDialog from './components/WarningDialog';
+import ValidationErrorDisplay from './components/ValidationErrorModal';
 import {
   saveFormData,
   loadFormData,
@@ -25,7 +26,6 @@ import {
   FormData as StoredFormData
 } from '../lib/localStorage';
 
-// Types
 interface PersonalInfo {
   name: string;
   regNumber: string;
@@ -146,38 +146,38 @@ const FormNavigation: React.FC<FormNavigationProps> = ({
       </div>
 
       {currentPage === totalPages ? (
-        <button
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 backdrop-blur-sm border relative overflow-hidden group ${
-            isSubmitting
-              ? 'bg-gray-700/50 text-gray-300 cursor-not-allowed border-gray-600/30'
-              : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white border-green-500/30 hover:border-green-400 shadow-lg shadow-green-900/50'
-          }`}
-        >
-          {isSubmitting ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="w-5 h-5 mr-1" />
-              Submit
-              <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            </>
-          )}
-        </button>
-      ) : (
-        <button
-          onClick={onNext}
-          className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg font-medium transition-all duration-200 backdrop-blur-sm border border-purple-500/30 hover:border-purple-400 shadow-lg shadow-purple-900/50 relative overflow-hidden group"
-        >
-          <div className='z-10'>Next</div>
-          <ChevronRight className="w-5 h-5 ml-1 z-10" />
-          <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-400 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-        </button>
-      )}
+  <button
+    onClick={onSubmit}
+    disabled={isSubmitting}
+    className={`flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-medium text-sm sm:text-base transition-all duration-200 backdrop-blur-sm border relative overflow-hidden group w-full sm:w-auto ${
+      isSubmitting
+        ? 'bg-gray-700/50 text-gray-300 cursor-not-allowed border-gray-600/30'
+        : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white border-green-500/30 hover:border-green-400 shadow-lg shadow-green-900/50'
+    }`}
+  >
+    {isSubmitting ? (
+      <>
+        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
+        Submitting...
+      </>
+    ) : (
+      <>
+        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
+        Submit
+      </>
+    )}
+  </button>
+) : (
+  <button
+    onClick={onNext}
+    className="flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg font-medium text-sm sm:text-base transition-all duration-200 backdrop-blur-sm border border-purple-500/30 hover:border-purple-400 shadow-lg shadow-purple-900/50 relative overflow-hidden group w-full sm:w-auto"
+  >
+    <div className="z-10">Next</div>
+    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 z-10" />
+    <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-400 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+  </button>
+)}
+
     </div>
   );
 };
@@ -611,7 +611,7 @@ export default function VinnovateITForm() {
       setCurrentPage(prev => Math.min(prev + 1, TOTAL_PAGES));
       setErrors({});
     } else {
-      showToast('Please fill in all required fields correctly', 'error');
+      showToast(`Found ${Object.keys(errors).length} validation error${Object.keys(errors).length !== 1 ? 's' : ''}. Please check the form below.`, 'error');
     }
   };
 
@@ -622,7 +622,8 @@ export default function VinnovateITForm() {
 
   const handleSubmit = async () => {
     if (!validateCurrentPage()) {
-      showToast('Please fill in all required fields', 'error');
+      const errorCount = Object.keys(errors).length;
+      showToast(`Please fix ${errorCount} validation error${errorCount !== 1 ? 's' : ''} before submitting.`, 'error');
       return;
     }
 
@@ -799,6 +800,13 @@ export default function VinnovateITForm() {
                   <h2 className="sm:text-xl lg:text-2xl font-semibold text-purple-300">{PAGE_TITLES[currentPage - 1]}</h2>
                 </div>
               </div>
+              {Object.keys(errors).length > 0 && (
+  <ValidationErrorDisplay 
+    errors={errors}
+    onDismiss={() => setErrors({})}
+    className="animate-fadeIn"
+  />
+)}
 
               {localStorageAvailable && (
                 <div className="flex justify-center mb-6 h-8"> {/* Fixed height container */}

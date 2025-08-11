@@ -352,9 +352,7 @@ const FutureSchema = new Schema<IFuture>({
   leadershipPreference: {
     type: String,
     required: [true, 'Please describe your leadership preference'],
-    trim: true,
-    minlength: [20, 'Leadership preference must be at least 20 characters'],
-    maxlength: [1000, 'Leadership preference cannot be more than 1000 characters']
+    trim: true
   },
   immediateChanges: {
     type: String,
@@ -460,7 +458,6 @@ const GeneralFeedbackSchema = new Schema<IGeneralFeedback>({
     type: String,
     required: [true, 'Please provide additional comments'],
     trim: true,
-    minlength: [20, 'Additional comments must be at least 20 characters'],
     maxlength: [2000, 'Additional comments cannot be more than 2000 characters']
   },
   anonymousFeedback: {
