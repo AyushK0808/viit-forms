@@ -76,9 +76,8 @@ interface AdminDashboardProps {
   secretCode?: string;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  secretCode = process.env.NEXT_PUBLIC_SECRET_CODE 
-}) => {
+export default function AdminDashboard(){
+  const secretCode = process.env.NEXT_PUBLIC_SECRET_CODE || '';
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [inputCode, setInputCode] = useState('');
   const [showCode, setShowCode] = useState(false);
@@ -674,5 +673,3 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     </div>
   );
 };
-
-export default AdminDashboard;
