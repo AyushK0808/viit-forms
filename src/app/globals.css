@@ -24,3 +24,101 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes gradientMove {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        .animate-gradientMove {
+          background-size: 400% 400%;
+          animation: gradientMove 15s ease infinite;
+        }
+        
+        .animate-pulse-slow {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+        
+        .text-shadow-glow {
+          text-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
+        
+        /* Purple orbs */
+        .purple-orb-1, .purple-orb-2, .purple-orb-3 {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(60px);
+          z-index: 1;
+          pointer-events: none;
+        }
+        
+        .purple-orb-1 {
+          width: 200px;
+          height: 200px;
+          background-color: rgba(139, 92, 246, 0.2);
+          top: 10%;
+          left: 5%;
+          animation: floatOrb 20s ease-in-out infinite;
+        }
+        
+        .purple-orb-2 {
+          width: 300px;
+          height: 300px;
+          background-color: rgba(139, 92, 246, 0.15);
+          bottom: 10%;
+          right: 5%;
+          animation: floatOrb 25s ease-in-out infinite reverse;
+        }
+        
+        .purple-orb-3 {
+          width: 150px;
+          height: 150px;
+          background-color: rgba(139, 92, 246, 0.25);
+          top: 50%;
+          right: 20%;
+          animation: floatOrb 15s ease-in-out infinite 5s;
+        }
+        
+        @keyframes floatOrb {
+          0%, 100% { transform: translate(0, 0); }
+          25% { transform: translate(50px, 25px); }
+          50% { transform: translate(0, 50px); }
+          75% { transform: translate(-50px, 25px); }
+        }
+        
+        /* Purple sparkles */
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 0.7; transform: scale(1); }
+        }
+        
+        .sparkle {
+          position: absolute;
+          width: 3px;
+          height: 3px;
+          background-color: #a78bfa;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 2;
+        }
