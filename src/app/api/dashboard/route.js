@@ -4,6 +4,17 @@ import dbConnect from "@/lib/dbConnect";
 import FormSubmission from "@/models/Members";
 
 export async function GET(request) {
+  // Authentication check
+  const authHeader = request.headers.get('authorization');
+  const adminSecret = process.env.ADMIN_SECRET_CODE;
+  
+  if (!authHeader || authHeader !== `Bearer ${adminSecret}`) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized access' },
+      { status: 401 }
+    );
+  }
+
   await dbConnect();
   
   try {

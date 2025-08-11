@@ -112,7 +112,12 @@ export default function AdminDashboard(){
       if (filterDomain) params.append('domain', filterDomain);
 
       // Replace mock API call with actual API call
-      const response = await fetch(`/api/dashboard?${params.toString()}`);
+      const response = await fetch(`/api/dashboard?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${secretCode}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
@@ -135,7 +140,7 @@ export default function AdminDashboard(){
     } finally {
       setLoading(false);
     }
-  }, [filterDomain]);
+  }, [filterDomain, secretCode]);
 
   // Filter responses client-side for search
   const filteredResponses = responses.filter(response => {
