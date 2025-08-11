@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Eye, EyeOff, Download, Users, Search, X, ChevronDown, ChevronUp, Lock, Shield, RefreshCw } from 'lucide-react';
 
 interface FormResponse {
@@ -99,7 +99,7 @@ export default function AdminDashboard(){
     }
   };
 
-  const fetchResponses = async (page: number = 1) => {
+  const fetchResponses = useCallback(async (page: number = 1) => {
     setLoading(true);
     setError('');
     
@@ -135,7 +135,7 @@ export default function AdminDashboard(){
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterDomain]);
 
   // Filter responses client-side for search
   const filteredResponses = responses.filter(response => {
@@ -156,10 +156,17 @@ export default function AdminDashboard(){
     const headers = [
       'Name', 'Reg Number', 'Year', 'Phone', 'Branch', 'Gender', 'VIT Email', 'Personal Email',
       'Domain', 'Additional Domains', 'Join Month', 'Other Orgs', 'CGPA',
-      'Overall Contribution', 'Tech Contribution', 'Management Contribution', 'Design Contribution',
-      'Member Bonding', 'Likely to Seek Help', 'Commitment Rating',
+      'Overall Contribution', 'Projects', 'Events', 'Skills Learned', 'Challenges', 'How Changed',
+      'Overall Rating', 'Tech Rating', 'Management Rating', 'Design Rating',
+      'Member Bonding', 'Likely to Seek Help', 'Club Environment', 'Liked Characteristics', 
+      'Disliked Characteristics', 'Favorite Teammates', 'Favorite Teammates Traits', 'Team Improvement Suggestions',
+      'Why Joined VinnovateIT', 'Wishlist Fulfillment', 'Commitment Rating', 'Commitment Justification',
+      'Leadership Preference', 'Immediate Changes', 'Upcoming Year Changes', 'Preferred Fellow Leaders',
+      'Skills to Learn', 'Domains to Explore',
       'Overall Board Performance', 'Board Communication', 'Board Accessibility', 'Board Decision Making',
-      'Overall Club Experience', 'Recommend to Others', 'Submitted At'
+      'Most Effective Board Member', 'Board Improvement Suggestions', 'Board Appreciation',
+      'Overall Club Experience', 'Recommend to Others', 'Additional Comments', 'Anonymous Feedback',
+      'Submitted At'
     ];
     
     const csvData = filteredResponses.map(response => [
@@ -176,19 +183,45 @@ export default function AdminDashboard(){
       response.personalInfo.joinMonth,
       response.personalInfo.otherOrganizations,
       response.personalInfo.cgpa,
+      response.journey.contribution,
+      response.journey.projects,
+      response.journey.events,
+      response.journey.skillsLearned,
+      response.journey.challenges,
+      response.journey.howChanged,
       response.journey.overallContribution,
       response.journey.techContribution,
       response.journey.managementContribution,
       response.journey.designContribution,
       response.teamBonding.memberBonding,
       response.teamBonding.likelyToSeekHelp,
+      response.teamBonding.clubEnvironment,
+      response.teamBonding.likedCharacteristics,
+      response.teamBonding.dislikedCharacteristics,
+      response.teamBonding.favoriteTeammates,
+      response.teamBonding.favoriteTeammatesTraits,
+      response.teamBonding.improvementSuggestions,
+      response.future.whyJoinedVinnovateIT,
+      response.future.wishlistFulfillment,
       response.future.commitmentRating,
+      response.future.commitmentJustification,
+      response.future.leadershipPreference,
+      response.future.immediateChanges,
+      response.future.upcomingYearChanges,
+      response.future.preferredFellowLeaders,
+      response.future.skillsToLearn,
+      response.future.domainsToExplore,
       response.boardReview.overallBoardPerformance,
       response.boardReview.boardCommunication,
       response.boardReview.boardAccessibility,
       response.boardReview.boardDecisionMaking,
+      response.boardReview.mostEffectiveBoardMember,
+      response.boardReview.boardImprovementSuggestions,
+      response.boardReview.boardAppreciation,
       response.generalFeedback.overallClubExperience,
       response.generalFeedback.recommendToOthers,
+      response.generalFeedback.additionalComments,
+      response.generalFeedback.anonymousFeedback,
       response.submittedAt || ''
     ]);
     
@@ -220,7 +253,7 @@ export default function AdminDashboard(){
     if (isAuthenticated && filterDomain !== '') {
       fetchResponses(1);
     }
-  }, [filterDomain]);
+  }, [filterDomain, isAuthenticated, fetchResponses]);
 
   if (!isAuthenticated) {
     return (
@@ -502,6 +535,10 @@ export default function AdminDashboard(){
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-1">
+                            <p className="text-purple-400">Overall Contribution</p>
+                            <p className="text-white">{response.journey.contribution}</p>
+                          </div>
+                          <div className="space-y-1">
                             <p className="text-purple-400">Projects</p>
                             <p className="text-white">{response.journey.projects}</p>
                           </div>
@@ -516,6 +553,10 @@ export default function AdminDashboard(){
                           <div className="space-y-1">
                             <p className="text-purple-400">Challenges</p>
                             <p className="text-white">{response.journey.challenges}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">How VinnovateIT Changed You</p>
+                            <p className="text-white">{response.journey.howChanged}</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
@@ -549,6 +590,22 @@ export default function AdminDashboard(){
                             <p className="text-white">{response.teamBonding.clubEnvironment}</p>
                           </div>
                           <div className="space-y-1">
+                            <p className="text-purple-400">Liked Characteristics</p>
+                            <p className="text-white">{response.teamBonding.likedCharacteristics}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Disliked Characteristics</p>
+                            <p className="text-white">{response.teamBonding.dislikedCharacteristics}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Favorite Teammates</p>
+                            <p className="text-white">{response.teamBonding.favoriteTeammates}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Favorite Teammates Traits</p>
+                            <p className="text-white">{response.teamBonding.favoriteTeammatesTraits}</p>
+                          </div>
+                          <div className="space-y-1">
                             <p className="text-purple-400">Improvement Suggestions</p>
                             <p className="text-white">{response.teamBonding.improvementSuggestions}</p>
                           </div>
@@ -576,16 +633,36 @@ export default function AdminDashboard(){
                             <p className="text-white">{response.future.whyJoinedVinnovateIT}</p>
                           </div>
                           <div className="space-y-1">
+                            <p className="text-purple-400">Wishlist Fulfillment</p>
+                            <p className="text-white">{response.future.wishlistFulfillment}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Commitment Justification</p>
+                            <p className="text-white">{response.future.commitmentJustification}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Leadership Preference</p>
+                            <p className="text-white">{response.future.leadershipPreference}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Immediate Changes</p>
+                            <p className="text-white">{response.future.immediateChanges}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Upcoming Year Changes</p>
+                            <p className="text-white">{response.future.upcomingYearChanges}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Preferred Fellow Leaders</p>
+                            <p className="text-white">{response.future.preferredFellowLeaders}</p>
+                          </div>
+                          <div className="space-y-1">
                             <p className="text-purple-400">Skills to Learn</p>
                             <p className="text-white">{response.future.skillsToLearn}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-purple-400">Domains to Explore</p>
                             <p className="text-white">{response.future.domainsToExplore}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-purple-400">Leadership Preference</p>
-                            <p className="text-white">{response.future.leadershipPreference}</p>
                           </div>
                         </div>
                         <div className="mt-4 bg-purple-900/20 p-4 rounded-lg border border-purple-500/30 max-w-xs">
@@ -638,9 +715,15 @@ export default function AdminDashboard(){
                         <h4 className="text-lg font-semibold text-purple-300 mb-4 pb-2 border-b border-purple-500/30">
                           General Feedback
                         </h4>
-                        <div className="space-y-1">
-                          <p className="text-purple-400">Additional Comments</p>
-                          <p className="text-white">{response.generalFeedback.additionalComments}</p>
+                        <div className="space-y-4">
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Additional Comments</p>
+                            <p className="text-white">{response.generalFeedback.additionalComments}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-purple-400">Anonymous Feedback</p>
+                            <p className="text-white">{response.generalFeedback.anonymousFeedback}</p>
+                          </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                           <div className="bg-purple-900/20 p-4 rounded-lg border border-purple-500/30">
