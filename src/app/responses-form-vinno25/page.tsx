@@ -72,9 +72,6 @@ interface FormResponse {
   status?: string;
 }
 
-interface AdminDashboardProps {
-  secretCode?: string;
-}
 
 export default function AdminDashboard(){
   const secretCode = process.env.NEXT_PUBLIC_SECRET_CODE || '';
