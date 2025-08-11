@@ -6,7 +6,7 @@ import FormSubmission from "@/models/Members";
 export async function GET(request) {
   // Authentication check
   const authHeader = request.headers.get('authorization');
-  const adminSecret = process.env.ADMIN_SECRET_CODE;
+  const adminSecret = process.env.NEXT_PUBLIC_SECRET_CODE;
   
   if (!authHeader || authHeader !== `Bearer ${adminSecret}`) {
     return NextResponse.json(
