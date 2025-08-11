@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, User, MapPin, Users, Target, Star, MessageSquare, CheckCircle } from 'lucide-react';
 import ProgressBar from './components/progressBar';
 import Toast from './components/Toast';
@@ -10,6 +11,19 @@ import TeamBondingForm from './components/pages/TeamBonding';
 import FutureForm from './components/pages/Future';
 import BoardReviewForm from './components/pages/BoardReview';
 import GeneralFeedbackForm from './components/pages/GeneralFeedback';
+import RestoreDialog from './components/RestoreDialog';
+import AutoSaveStatus from './components/AutoSaveStatus';
+import WarningDialog from './components/WarningDialog';
+import {
+  saveFormData,
+  loadFormData,
+  clearFormData,
+  hasSavedData,
+  getLastSavedTime,
+  formatLastSavedTime,
+  isLocalStorageAvailable,
+  FormData as StoredFormData
+} from '../lib/localStorage';
 
 // Types
 interface PersonalInfo {
@@ -248,7 +262,6 @@ const initialFormData: FormData = {
   }
 };
 
-// Main Component
 export default function VinnovateITForm() {
   const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -263,6 +276,152 @@ export default function VinnovateITForm() {
   type: 'info',
 });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'saving' | 'saved' | 'error' | 'idle'>('idle');
+  const [lastSavedTime, setLastSavedTime] = useState<string>('');
+  const [localStorageAvailable, setLocalStorageAvailable] = useState(false);
+  
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const sparkles = useMemo(() => {
+    return Array.from({ length: 30 }).map((_, index) => (
+      <div 
+        key={index}
+        className="sparkle"
+        style={{
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+          animation: `sparkle ${3 + Math.random() * 5}s ease-in-out infinite ${Math.random() * 5}s`
+        }}
+      ></div>
+    ));
+  }, []);
+
+  useEffect(() => {
+    const available = isLocalStorageAvailable();
+    setLocalStorageAvailable(available);
+    
+    if (available && hasSavedData()) {
+      const lastSaved = getLastSavedTime();
+      if (lastSaved) {
+        setLastSavedTime(formatLastSavedTime(lastSaved));
+        setShowRestoreDialog(true);
+      }
+    }
+  }, []);
+
+  const performAutoSave = useCallback(() => {
+    if (!localStorageAvailable) return;
+    
+    setAutoSaveStatus('saving');
+    
+    try {
+      const dataToSave: StoredFormData = {
+        ...formData,
+        currentPage
+      };
+      
+      saveFormData(dataToSave);
+      setAutoSaveStatus('saved');
+      
+      const now = new Date();
+      setLastSavedTime(formatLastSavedTime(now));
+      
+      setTimeout(() => {
+        setAutoSaveStatus('idle');
+      }, 3000);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      setAutoSaveStatus('error');
+      
+      setTimeout(() => {
+        setAutoSaveStatus('idle');
+      }, 3000);
+    }
+  }, [formData, currentPage, localStorageAvailable]);
+
+  const scheduleAutoSave = useCallback(() => {
+    if (!localStorageAvailable) return;
+    
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    autoSaveTimeoutRef.current = setTimeout(performAutoSave, 2000); // Save after 2 seconds of inactivity
+  }, [performAutoSave, localStorageAvailable]);
+
+  useEffect(() => {
+    if (localStorageAvailable && 
+        (formData.personalInfo.name || 
+         formData.personalInfo.regNumber || 
+         formData.journey.contribution ||
+         Object.values(formData).some(section => 
+           typeof section === 'object' && 
+           Object.values(section).some(value => 
+             (typeof value === 'string' && value.trim() !== '') || 
+             (typeof value === 'number' && value !== 5)
+           )
+         ))) {
+      scheduleAutoSave();
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, scheduleAutoSave, localStorageAvailable]);
+
+  useEffect(() => {
+    if (localStorageAvailable && currentPage > 1) {
+      scheduleAutoSave();
+    }
+  }, [currentPage, scheduleAutoSave, localStorageAvailable]);
+
+  const handleRestoreData = () => {
+    const savedData = loadFormData();
+    if (savedData) {
+      setFormData({
+        personalInfo: savedData.personalInfo,
+        journey: savedData.journey,
+        teamBonding: savedData.teamBonding,
+        future: savedData.future,
+        boardReview: savedData.boardReview,
+        generalFeedback: savedData.generalFeedback,
+      });
+      
+      if (savedData.currentPage) {
+        setCurrentPage(savedData.currentPage);
+      }
+      
+      showToast('Previous progress restored successfully!', 'success');
+    }
+    setShowRestoreDialog(false);
+  };
+
+  const handleDiscardData = () => {
+    setShowWarningDialog(true);
+  };
+
+  const handleConfirmDiscard = () => {
+    clearFormData();
+    setShowRestoreDialog(false);
+    setShowWarningDialog(false);
+    showToast('Starting with a fresh form', 'info');
+  };
+
+  const handleCancelDiscard = () => {
+    setShowWarningDialog(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Utility functions
   const validateEmail = (email: string): boolean => {
@@ -285,7 +444,7 @@ export default function VinnovateITForm() {
   useEffect(() => {
     if (toast.show) {
       const timer = setTimeout(() => {
-        setToast({ ...toast, show: false });
+        setToast(prev => ({ ...prev, show: false }));
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -495,10 +654,16 @@ export default function VinnovateITForm() {
       
       showToast('Form submitted successfully! Thank you for your submission.', 'success');
       
+      if (localStorageAvailable) {
+        clearFormData();
+      }
+      
       // Reset form
       setFormData(initialFormData);
       setCurrentPage(1);
       setErrors({});
+      setAutoSaveStatus('idle');
+      setLastSavedTime('');
     } catch (error) {
       console.error('Submission error:', error);
       showToast('Failed to submit form. Please try again.', 'error');
@@ -586,9 +751,11 @@ export default function VinnovateITForm() {
           {/* Logo Image with purple glow */}
           <div className="flex justify-center mb-8 relative">
             <div className="absolute -inset-2 bg-purple-500 opacity-20 blur-xl rounded-full"></div>
-            <img 
+            <Image 
               src="https://raw.githubusercontent.com/vinnovateit/.github/main/assets/whiteLogoViit.png" 
               alt="VIIT Logo" 
+              width={192}
+              height={64}
               className="w-48 h-auto relative z-10"
             />
           </div>
@@ -607,18 +774,18 @@ export default function VinnovateITForm() {
             <div className="absolute -inset-0.5 bg-purple-900 opacity-10 blur-xl rounded-lg"></div>
 
             <div className="relative z-10">
-              {/* Enhanced Title with Glowing Underline */}
-              <div className="relative mb-8 text-center">
-                <h1 className="text-4xl font-extrabold text-purple-400 inline-block relative text-shadow-glow">
-                  VinnovateIT Form
-                </h1>
-                {/* Purple glowing underline */}
-                <div className="h-1 w-3/4 mx-auto mt-2 rounded-full bg-gradient-to-r from-purple-400 via-purple-700 to-purple-400 relative overflow-hidden">
-                  <div className="absolute -inset-1 blur-md bg-purple-500 opacity-70"></div>
-                  <div className="absolute inset-0 animate-pulse-slow bg-purple-300 opacity-50"></div>
+                {/* Enhanced Title with Glowing Underline */}
+                <div className="relative mb-8 text-center">
+                  <h1 className="text-4xl font-extrabold text-purple-400 inline-block relative text-shadow-glow">
+                    VinnovateIT Form
+                  </h1>
+                  {/* Purple glowing underline */}
+                  <div className="h-1 w-3/4 mx-auto mt-2 rounded-full bg-gradient-to-r from-purple-400 via-purple-700 to-purple-400 relative overflow-hidden">
+                    <div className="absolute -inset-1 blur-md bg-purple-500 opacity-70"></div>
+                    <div className="absolute inset-0 animate-pulse-slow bg-purple-300 opacity-50"></div>
+                  </div>
+                  <p className="text-purple-300 mt-4">Complete all sections to submit your form</p>
                 </div>
-                <p className="text-purple-300 mt-4">Complete all sections to submit your form</p>
-              </div>
 
               {/* Progress Bar */}
               <div className="mb-8">
@@ -632,6 +799,14 @@ export default function VinnovateITForm() {
                   <h2 className="sm:text-xl lg:text-2xl font-semibold text-purple-300">{PAGE_TITLES[currentPage - 1]}</h2>
                 </div>
               </div>
+
+              {localStorageAvailable && (
+                <div className="flex justify-center mb-6 h-8"> {/* Fixed height container */}
+                  <div className="flex items-center justify-center">
+                    <AutoSaveStatus status={autoSaveStatus} lastSavedTime={lastSavedTime} />
+                  </div>
+                </div>
+              )}
 
               {/* Form Content */}
               <div className="mb-8">
@@ -658,18 +833,25 @@ export default function VinnovateITForm() {
       {/* Toast Notification */}
       <Toast show={toast.show} message={toast.message} type={toast.type} />
 
+      <RestoreDialog
+        isOpen={showRestoreDialog}
+        onRestore={handleRestoreData}
+        onDiscard={handleDiscardData}
+        lastSavedTime={lastSavedTime}
+      />
+
+      <WarningDialog
+        isOpen={showWarningDialog}
+        onConfirm={handleConfirmDiscard}
+        onCancel={handleCancelDiscard}
+        title="Discard Saved Progress?"
+        message="Are you sure you want to start fresh? This will permanently delete your saved progress."
+        confirmText="Start Fresh"
+        cancelText="Keep Progress"
+      />
+
       {/* Purple sparkles */}
-      {Array.from({ length: 30 }).map((_, index) => (
-        <div 
-          key={index}
-          className="sparkle"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animation: `sparkle ${3 + Math.random() * 5}s ease-in-out infinite ${Math.random() * 5}s`
-          }}
-        ></div>
-      ))}
+      {sparkles}
 
       {/* Custom Styles */}
       <style jsx global>{`
