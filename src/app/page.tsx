@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react';
-import { Lock, CheckCircle } from 'lucide-react';
+import { Lock} from 'lucide-react';
 
 export default function FormClosed() {
   return (
